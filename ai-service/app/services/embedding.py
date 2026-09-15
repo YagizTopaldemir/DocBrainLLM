@@ -12,10 +12,18 @@ client = OpenAI(
 )
 
 
+EMBEDDING_MODEL = "text-embedding-3-small"
+
+
 def get_embedding(text: str) -> list[float]:
-  
+
+    if not text or not text.strip():
+        raise ValueError("Embedding için boş metin gönderilemez.")
+
+    text = text.strip()
+
     response = client.embeddings.create(
-        model="text-embedding-3-small",
+        model=EMBEDDING_MODEL,
         input=text
     )
 

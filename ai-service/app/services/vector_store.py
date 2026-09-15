@@ -14,21 +14,21 @@ from qdrant_client.models import (
 client = QdrantClient(path="qdrant_data")
 
 COLLECTION_NAME = "documents"
+VECTOR_SIZE = 1536
 
 
 def create_collection():
+
     collections = client.get_collections().collections
 
-    existing_collections = [
-        collection.name
-        for collection in collections
-    ]
+    if COLLECTION_NAME not in {
+        collection.name for collection in collections
+    }:
 
-    if COLLECTION_NAME not in existing_collections:
         client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=VectorParams(
-                size=1536,
+                size=VECTOR_SIZE,
                 distance=Distance.COSINE,
             ),
         )
@@ -40,7 +40,19 @@ def insert_vector(
     chunk_index: int,
     text: str,
     page: int | None = None,
+    total_pages: int | None = None,
 ):
+
+    if len(vector) != VECTOR_SIZE:
+        raise ValueError(
+            f"Embedding boyutu {VECTOR_SIZE} olmalıdır."
+        )
+
+    if not text or not text.strip():
+        raise ValueError(
+            "Boş chunk Qdrant'a eklenemez."
+        )
+
     point = PointStruct(
         id=str(uuid4()),
         vector=vector,
@@ -48,7 +60,8 @@ def insert_vector(
             "document_id": document_id,
             "chunk_index": chunk_index,
             "page": page,
-            "text": text,
+            "total_pages": total_pages,
+            "text": text.strip(),
         },
     )
 
@@ -62,8 +75,18 @@ def search_similar(
     vector: list[float],
     document_id: int,
     limit: int = 5,
-    score_threshold: float = 0.5,
 ):
+
+    if len(vector) != VECTOR_SIZE:
+        raise ValueError(
+            f"Query vector boyutu {VECTOR_SIZE} olmalıdır."
+        )
+
+    if limit <= 0:
+        raise ValueError(
+            "limit 0'dan büyük olmalıdır."
+        )
+
     results = client.query_points(
         collection_name=COLLECTION_NAME,
         query=vector,
@@ -71,12 +94,13 @@ def search_similar(
             must=[
                 FieldCondition(
                     key="document_id",
-                    match=MatchValue(value=document_id),
+                    match=MatchValue(
+                        value=document_id
+                    ),
                 )
             ]
         ),
         limit=limit,
-        score_threshold=score_threshold,
     )
 
     return results.points

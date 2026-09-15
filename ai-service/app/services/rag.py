@@ -17,23 +17,35 @@ def ask_question(
     context_parts = []
 
     for result in results:
-        text = result.payload.get("text")
-        page = result.payload.get("page")
 
-        print("SCORE:", result.score)
-        print("PAGE:", page)
-        print("TEXT:", text)
+        payload = result.payload or {}
 
-        if text:
-            context_parts.append(
-                f"[Sayfa {page}]\n{text}"
-            )
+        text = payload.get("text")
+        page = payload.get("page")
+
+        if not text:
+            continue
+
+        print(
+            f"SCORE: {result.score:.4f} | PAGE: {page}"
+        )
+
+        context_parts.append(
+            f"[Sayfa {page}]\n{text}"
+        )
 
     context = "\n\n".join(context_parts)
 
-    answer = generate_answer(
+    print("\n========== RETRIEVAL ==========")
+    print(f"Chunks: {len(context_parts)}")
+
+    print("\n========== FINAL CONTEXT ==========")
+    print(context)
+
+    print("\n========== QUESTION ==========")
+    print(question)
+
+    return generate_answer(
         question=question,
         context=context
     )
-
-    return answer

@@ -7,12 +7,18 @@ def retrieve_relevant_chunks(
     document_id: int,
     limit: int = 5
 ):
+    query = query.strip()
+
+    if not query:
+        raise ValueError("Soru boş olamaz.")
+
+    if limit <= 0:
+        raise ValueError("limit 0'dan büyük olmalıdır.")
+
     query_vector = get_embedding(query)
 
-    results = search_similar(
+    return search_similar(
         vector=query_vector,
         document_id=document_id,
         limit=limit
     )
-
-    return results
